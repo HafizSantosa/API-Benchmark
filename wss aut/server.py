@@ -2,13 +2,14 @@ import asyncio
 import ssl
 import websockets
 
-MAX_CONNECTIONS = 3
-VALID_TOKENS = {"secrettoken1", "secrettoken2"}
+MAX_CONNECTIONS = 2
+VALID_TOKENS = {"secrettoken1", "secrettoken2", "secrettoken3"}
 active_connections = set()
 
 async def echo(websocket, path):
     print(f"📡 Incoming path: {path}")
 
+    # Ambil dan validasi token (seperti sebelumnya)
     token = None
     if '?' in path:
         query = path.split('?')[1]
@@ -25,20 +26,30 @@ async def echo(websocket, path):
         await websocket.close(code=1013, reason="Too many connections")
         return
 
-    print("✅ Koneksi berhasil dengan token:", token)
     active_connections.add(websocket)
+    print("✅ Client terhubung:", token)
+
+    async def receive_loop():
+        try:
+            while True:
+                message = await websocket.recv()
+                print(f"📥 Client: {message}")
+        except websockets.exceptions.ConnectionClosed:
+            print("❌ Client putus (recv loop)")
+
+    async def send_loop():
+        try:
+            while True:
+                await websocket.send("📢 Hello from server!")
+                await asyncio.sleep(10)
+        except websockets.exceptions.ConnectionClosed:
+            print("❌ Client putus (send loop)")
 
     try:
-        while True:
-            message = await asyncio.wait_for(websocket.recv(), timeout=30)
-            print(f"📨 Diterima: {message}")
-            await websocket.send("PONG from secured WSS server")
-    except asyncio.TimeoutError:
-        print("⚠️ Timeout: tidak ada data.")
-    except websockets.exceptions.ConnectionClosed as e:
-        print(f"❌ Koneksi ditutup: {e}")
+        await asyncio.gather(receive_loop(), send_loop())
     finally:
         active_connections.remove(websocket)
+        print("ℹ️ Client keluar.")
 
 async def main():
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -57,3 +68,6 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
+# limit con, auth

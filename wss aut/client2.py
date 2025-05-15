@@ -3,7 +3,7 @@ import websockets
 import ssl
 
 async def heartbeat_client():
-    uri = "wss://localhost:8002/?token=secrettoken1"
+    uri = "wss://localhost:8002/?token=secrettoken3"
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE  # Hanya untuk testing!
